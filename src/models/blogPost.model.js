@@ -1,56 +1,40 @@
 import mongoose , {Schema} from "mongoose";
 
-const blogSchema = new mongoose.Schema
-(
-    {
-        content:{
-            type:String,
-            required:true,
-            
-        }
+const blogSchema = new Schema({
+    content: {
+        type: String,
+        required: true
     },
-    {
-        comment:[{
-            type:Schema.Types.ObjectId,
-            ref : "Comment"
-        }]
+    comments: [{
+        type: Schema.Types.ObjectId,
+        ref: "Comment"
+    }],
+    likes: [{
+        type: Schema.Types.ObjectId,
+        ref: "Like"
+    }],
+    isPublished: {
+        type: Boolean,
+        default: false
     },
-    {
-        likes:{
-            type:Schema.Types.ObjectId,
-            ref : "Like"
-        }
+    title: {
+        type: String,
+        required: true
     },
-    {
-        isPublished:{
-            type : Boolean
-        }
+    image: {
+        type: String
     },
-    {
-        title:{
-            type:String,
-            required:true
-        }
+    author: {
+        type: Schema.Types.ObjectId,
+        ref: "User"
     },
-    {
-        image:{
-            type:String
-        }
-    },
-    {
-        author:{
-            type:Schema.Types.ObjectId,
-            ref:"User"
-        }
-    },
-    {
-        imageCaption:{
-            type:String
-        }
-    },
-    {
-        timeStamps:true
+    imageCaption: {
+        type: String
     }
-)
+},
+ {
+    timestamps: true
+}
+);
 
 export const Blog = new mongoose.model("Blog" , blogSchema)

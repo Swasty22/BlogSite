@@ -5,22 +5,36 @@ import {asyncHandler} from '../utilities/asyncHandler.js'
 import { deleteFromCloudinary, uploadOnCloudinary } from '../utilities/cloudinary.js'
 
 
-const generateAccessTokenAndRefreshToken = async() =>{
-    try {
-        const user = await User.findById(user._id)
-        const accessToken = await user.generateAccessToken()
-        const refreshToken = await user.generateRefreshToken()
+const generateAccessTokenAndRefreshToken = async(userId) =>{
     
-        user.refreshToken = refreshToken
-        await user.save({validateBeforeSave:false})
-        console.log("Accesstoken:" , accessToken)
-        console.log("refreshToken :" , refreshToken);
-        return {accessToken , refreshToken}
-
-    } catch (error) {
-        throw new apiError(500 , "something went wrong while creating access and refresh token")
+        try {
+            const user = await User.findById(userId)
+    
+            // console.log("user found inside generate access and refresh token:" ,user);
+            
+            const accessToken =  await user.generateAccessToken()
+            
+            const refreshToken = await user.generateRefreshToken()
+            
+           
+        
+            user.refreshToken = refreshToken
+    
+            await user.save({validateBeforeSave:false})
+            
+            
+            return {accessToken , refreshToken}
+        } catch (error) {
+            console.log(error , "something went wrong while generating access and refresh token");
+        }
     }
-}
+    
+        // throw new apiError(500 , "something went wrong while creating access and refresh token", error)
+    
+
+
+    
+
 
 
 const registerUser = asyncHandler(async (req,res) => {
@@ -50,8 +64,14 @@ const registerUser = asyncHandler(async (req,res) => {
 
     const profilePic = await uploadOnCloudinary(profilePicLocalPath)
 
-    const user = await User.create({userName:userName.toLowerCase() , fullName , email , password , profilePic:profilePic.url})
-
+    const user = await User.create(
+        {userName:userName.toLowerCase() , 
+            fullName , 
+            email ,
+             password ,
+              profilePic:profilePic.url
+        })
+        // console.log("user after register :"  , user);
     const createUser = await User.findById(user._id).select("-password -refreshToken")
 
     if (!createUser) {
@@ -71,13 +91,18 @@ const loginUser = asyncHandler(async (req, res) => {
     //when logging in we need to create access and refresh token 
     //store the  refresh token in db 
 
-    const {email , password , userName} = req.body
-    console.log(email , password);
-    if (!email) {
-        throw new apiError(400 , "email is required")
+    const {email , password } = req.body
+    // console.log("password: " , password);
+    // console.log("email :" , email);
+    
+    if (!email || !password) {
+        throw new Error(400, "email and password is required");
     }
+    
 
-    const user = User.findOne({$or:[{email} , {userName}]})
+    const user = await User.findOne({email})
+    // console.log("user found by mail :" , user);
+    // console.log("user :" , user);
     if (!user) {
         throw new apiError(401 , "unauthorized user")
     }
@@ -90,20 +115,26 @@ const loginUser = asyncHandler(async (req, res) => {
         throw new apiError(401 , "password is incorrect ")
     }
 
+    // console.log("user inside login user : " ,user )
+
     const {accessToken , refreshToken} = await generateAccessTokenAndRefreshToken(user._id)
+    
 
     //after logged in we need to deny the modification of access and refrehs token by front end
 
-    const loggedIn = await User.findById(user._id).select('-password , -refreshToken')
+    // console.log("user :" , user);
+    const  loggedIn = await User.findById(user._id).select('-password  -refreshToken')
 
     const options = {
         httpOnly:true , secure:true
     }
 
-    return res.status(200).cookie("access token :" , accessToken).cookie("refresh token :" , refreshToken)
-    .json(new apiResponse(
-        {user: loggedIn , accessToken , refreshToken
-        }, "user logged in successfully"))
+    return res.status(200)
+    .cookie("access token " , accessToken , options)
+    .cookie("refresh token " , refreshToken , options)
+    .json(new apiResponse(200
+        // {user:loggedIn , accessToken , refreshToken}
+        , "user logged in successfully"))
 
 })
 

@@ -2,56 +2,53 @@
 how to write user controller
 username , fullname , email , profilepic , password , refresh
 */
-import mongoose , {Schema} from "mongoose";
+import mongoose from "mongoose";
+import  { Schema } from "mongoose"
 import bcrypt from 'bcrypt'
-import jwt from "jsonwebtoken";
+import jwt from 'jsonwebtoken'
 
-const userSchema = new mongoose.Schema
-(
-    {
-        userName:{
-            type:String,
-            required:true,
-            unique:true,
-            lowercase:true,
-            trim:true,
-            index:true
-        }
+const userSchema = new Schema({
+    userName: {
+        type: String,
+        required: true,
+        unique: true,
+        lowercase: true,
+        trim: true,
+        index: true
     },
-    {
-        fullName:{
-            type:String,
-            required:true,
-        }
+    fullName: {
+        type: String,
+        required: true,
     },
-    {
-        email:{
-            type:String,
-            required:true,
-            lowercase:true
-        }
+    email: {
+        type: String,
+        required: true,
+        lowercase: true
     },
-    {
-        profilePic:{
-            type:String, //from cloudinary
-            required:true
-        }
+    profilePic: {
+        type: String, // from cloudinary
+        required: true
     },
-    {
-        password:{
-            type:String,
-            required:true
-        }
+    password: {
+        type: String,
+        required: true
     },
-    {
-        bio:{
-            type:String,
-        }
+    bio: {
+        type: String,
     },
-    {
-        timeStamps:true
+    refreshToken: {
+       
     }
-)
+}, 
+{
+    timestamps: true // Corrected option name
+}
+);
+
+
+
+
+
 const saltRounds = 10
 userSchema.pre('save' , async function (next) {
     if (!this.isModified('password'))  return next()
@@ -61,17 +58,19 @@ userSchema.pre('save' , async function (next) {
 })
 
 userSchema.methods.comparePassword = async function(password){ //user providing password
+    // console.log("plain password :" , password);
+    // console.log("hashed password :" , this.password);
    return await bcrypt.compare(password , this.password) //db saved password
 }
 
 userSchema.methods.generateAccessToken = function() {
     return jwt.sign({
         _id:this._id,
-        userName:this.userName
+        
     },
     process.env.ACCESS_TOKEN_SECRET ,
     {
-        expiresIn:ACCESS_TOKEN_EXPIRY
+        expiresIn:process.env.ACCESS_TOKEN_EXPIRY
     })
 }
 
@@ -82,7 +81,7 @@ userSchema.methods.generateRefreshToken = function() {
     },
     process.env.REFRESH_TOKEN_SECRET ,
     {
-        expiresIn:REFRESH_TOKEN_EXPIRY
+        expiresIn:process.env.REFRESH_TOKEN_EXPIRY
     })
 }
 
